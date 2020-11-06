@@ -4,6 +4,7 @@
 
 #include <sys/ioctl.h>
 #include <linux/hidraw.h>
+#include <linux/input.h>
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>
@@ -15,7 +16,11 @@
 #include <unistd.h>
 
 
+#define KEYBOARD_DEV "/dev/input/by-id/usb-_Raspberry_Pi_Internal_Keyboard-event-kbd"
+
 #define HID_REPORT_SIZE 8
+#define GRAB 1
+#define UNGRAB 0
 
 int hid_output;
 volatile int running = 0;
@@ -53,6 +58,7 @@ int find_hidraw_device() {
 int main() {
     int ret;
     int fd;
+    int uinput_fd;
     unsigned char buf[HID_REPORT_SIZE];
 
     fd = find_hidraw_device();
@@ -61,6 +67,11 @@ int main() {
 	return 1;
     }
     ret = initUSB();
+
+    uinput_fd = open(KEYBOARD_DEV, O_RDONLY);
+    ioctl(uinput_fd, EVIOCGRAB, UNGRAB);
+    usleep(500000);
+    ioctl(uinput_fd, EVIOCGRAB, GRAB);
 
     do {
         hid_output = open("/dev/hidg0", O_WRONLY | O_NDELAY);
@@ -98,6 +109,9 @@ int main() {
     };
 
     write(hid_output, buf, HID_REPORT_SIZE);
+
+    ioctl(uinput_fd, EVIOCGRAB, UNGRAB);
+    close(uinput_fd);
 
     printf("Cleanup USB\n");
     cleanupUSB();
