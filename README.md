@@ -11,20 +11,12 @@ Reboot!
 
 Run `sudo modprobe libcomposite`
 
-Run `wget https://gist.github.com/Gadgetoid/5a8ceb714de8e630059d30612503653f/raw/1f150cc0f5cf2ad5f937cefafcdf222090d811a0/pi400kb`
+RUn `wget https://gist.github.com/Gadgetoid/5a8ceb714de8e630059d30612503653f/raw/35fde8da7fcd88e7ccd3913c729f2b14bbd4a0a7/pi400kb`
 
 Run `sudo ./pi400kb`
 
 YOUR PI 400 IS NOW A FREAKING KEYBOARD FOR YOUR PC WHAAAAT!?
 
-Press `Ctrl + Raspberry` to exit.
+Your keyboard input will be detached from your Pi while it's forwarded to your host computer.
 
-## Detach keyboard from Pi
-
-Run `wget https://gist.github.com/Gadgetoid/5a8ceb714de8e630059d30612503653f/raw/1f150cc0f5cf2ad5f937cefafcdf222090d811a0/runpi400.sh`
-
-Run `xinput list` and find the ID of `Raspberry Pi Internal Keyboard`, also take note of the number in the brackets (it's probably 3).
-
-Edit `runpi400.sh` with the ID and second number for the float/reattach commands.
-
-Run `sudo ./runpi400.sh` and your keyboard will be detached from X, it will re-attach when you exit `pi400kb` with `Ctrl + Raspberry`
+Press `Ctrl + Raspberry` to exit and restore your keyboard on the Pi.
