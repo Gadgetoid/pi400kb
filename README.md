@@ -10,3 +10,7 @@ Run `wget https://gist.github.com/Gadgetoid/5a8ceb714de8e630059d30612503653f/raw
 Run `sudo ./pi400kb`
 
 YOUR PI 400 IS NOW A FREAKING KEYBOARD FOR YOUR PC WHAAAAT!?
+
+Press `Ctrl + Raspberry` to exit.
+
+Use `sudo ./runpi400.sh` to detach your keyboard from X. You might need to run `xinput list` and find the ID of "Raspberry Pi Internal Keyboard" here.

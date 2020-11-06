@@ -2,6 +2,8 @@
 
 #include "gadget-hid.h"
 
+#include <sys/ioctl.h>
+#include <linux/hidraw.h>
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>
@@ -16,24 +18,48 @@
 #define HID_REPORT_SIZE 8
 
 int hid_output;
-int running = 0;
+volatile int running = 0;
 int key_index = 0;
 
 void signal_handler(int dummy) {
     running = 0;
 }
 
+int find_hidraw_device() {
+    int fd;
+    int ret;
+    struct hidraw_devinfo hidinfo;
+    char path[20];
+
+    for(int x = 0; x < 16; x++){
+	sprintf(path, "/dev/hidraw%d", x);
+        if ((fd = open(path, O_RDWR | O_NONBLOCK)) == -1) {
+            continue;
+        }
+
+        ret = ioctl(fd, HIDIOCGRAWINFO, &hidinfo);
+
+        if(hidinfo.vendor == VENDOR && hidinfo.product == PRODUCT) {
+	    printf("Found keyboard at: %s\n", path);
+	    return fd;
+        }
+
+	close(fd);
+    }
+
+    return -1;
+}
+
 int main() {
     int ret;
     int fd;
     unsigned char buf[HID_REPORT_SIZE];
-    chdir(KEYBOW_HOME);
 
-    if ((fd = open(KEYBOARD_DEVICE, O_RDWR)) == -1) {
+    fd = find_hidraw_device();
+    if(fd == -1) {
 	printf("Failed to open keyboard device\n");
 	return 1;
     }
-
     ret = initUSB();
 
     do {
@@ -44,17 +70,15 @@ int main() {
         return 1;
     }
 
-    int x = 0;
-    for(x = 0; x < NUM_KEYS; x++){
-        last_state[x] = 0;
-    }
-
     printf("Running...\n");
     running = 1;
     signal(SIGINT, signal_handler);
 
     while (running){
-	read(fd, buf, HID_REPORT_SIZE);
+	int c = read(fd, buf, HID_REPORT_SIZE);
+	if(c != HID_REPORT_SIZE){
+		continue;
+	}
 	for(int x = 0; x < HID_REPORT_SIZE; x++)
 	{
 		printf("%x ", buf[x]);
@@ -62,7 +86,18 @@ int main() {
 	printf("\n");
 	write(hid_output, buf, HID_REPORT_SIZE);
         usleep(1000);
+
+	if(buf[0] == 0x09){
+	    running = 0;
+	    break;
+	}
     } 
+
+    for(int x = 0; x < HID_REPORT_SIZE; x++){
+	buf[x] = 0;
+    };
+
+    write(hid_output, buf, HID_REPORT_SIZE);
 
     printf("Cleanup USB\n");
     cleanupUSB();

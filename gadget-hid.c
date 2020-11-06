@@ -141,6 +141,7 @@ int initUSB() {
 
 out2:
     usbg_cleanup(s);
+    s = NULL;
 
 out1:
     return ret;
