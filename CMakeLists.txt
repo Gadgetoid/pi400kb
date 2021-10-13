@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.9)
 
 project(pi400kb)
 
+# for asprintf
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON)
+add_compile_definitions(_GNU_SOURCE)
+
 option(NO_OUTPUT "Disable USB HID output" OFF)
 
 
@@ -49,6 +55,14 @@ target_sources(libusbgx INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/libusbgx/src/function/serial.c
     ${CMAKE_CURRENT_LIST_DIR}/libusbgx/src/function/uac2.c
 )
+
+# disable -Waddress-of-packed-member unaligned pointer warning
+set_source_files_properties(
+    ${CMAKE_CURRENT_LIST_DIR}/libusbgx/src/function/ether.c
+    PROPERTIES COMPILE_FLAGS
+    "-Wno-address-of-packed-member"
+)
+
 target_include_directories(libusbgx INTERFACE ${CMAKE_CURRENT_LIST_DIR}/libusbgx/include)
 target_include_directories(libusbgx INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 
