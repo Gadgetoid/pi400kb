@@ -29,6 +29,10 @@ Your keyboard input will be detached from your Pi while it's forwarded to your h
 
 Press `Ctrl + Raspberry` to exit and restore your keyboard on the Pi.
 
+### Mouse Support
+
+Pi 400 KB supports the official Raspberry Pi Mouse VID:PID = 093a:2510 by default, but other mice should work.
+
 ## Building & Contributing
 
 ### Building
@@ -42,4 +46,21 @@ mkdir build
 cd build
 cmake ..
 make
+```
+
+### Custom Mouse/Keyboard Devices
+
+CMake accepts the following build arguments to customise the VID/PID and device path for the mouse/keyboard:
+
+* `KEYBOARD_VID` - Keyboard Vendor ID, default: 0x04d9
+* `KEYBOARD_PID` - Keyboard Product ID, default: 0x0007
+* `KEYBOARD_DEV` - Keyboard device path, default: /dev/input/by-id/usb-_Raspberry_Pi_Internal_Keyboard-event-kbd
+* `MOUSE_VID` - Mouse Vendor ID, default: 0x093a
+* `MOUSE_PID` - Mouse Product ID, default: 0x2510
+* `MOUSE_DEV` - Mouse device path, default: /dev/input/by-id/usb-PixArt_USB_Optical_Mouse-event-mouse
+
+Supply these arguments when configuring with CMake, eg:
+
+```
+cmake .. -DMOUSE_DEV="/dev/input/by-id/usb-EndGameGear_XM1_Gaming_Mouse_0000000000000000-event-mouse" -DMOUSE_VID=0x3367 -DMOUSE_PID=0x1903
 ```
