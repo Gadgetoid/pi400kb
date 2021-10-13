@@ -5,6 +5,10 @@ Anker make good ones- I used a 3m white one for my tests.
 
 Our USB-C to USB-A is great if you're using a USB-A port (but make sure it's a *high power* one): https://shop.pimoroni.com/products/usb-c-to-usb-a-cable-1m-black
 
+This project started out life as a gist - https://gist.github.com/Gadgetoid/5a8ceb714de8e630059d30612503653f
+
+Thank you to all the people who dropped by with kind words, suggestions and improvements.
+
 ## Quickstart (Ish)
 
 Add `dtoverlay=dwc2` to `/boot/config.txt`
