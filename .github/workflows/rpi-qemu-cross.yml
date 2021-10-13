@@ -1,0 +1,47 @@
+name: Cross-compile Pi400KB
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  create_image:
+    name: Install app and create a Raspbian Image
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        base_image: ['raspios_lite:2021-05-07']
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Build Pi400KB
+        uses: pguyot/arm-runner-action@v1
+        id: arm_runner_install
+        with:
+          image_additional_mb: 4096
+          base_image: ${{ matrix.base_image }}
+          cpu: 'cortex-a8'  # 'arm1176'
+          copy_repository_path: /home/pi/pi400kb
+          copy_artifact_path: ../home/pi/pi400kb/build.rpi/pi400kb
+          copy_artifact_dest: ./buid.rpi/pi400kb
+          optimize_image: yes
+          commands: |
+            pwd
+            apt update -y
+            apt -y install gcc g++ build-essential cmake libconfig-dev
+            mkdir build.rpi
+            cd build.rpi
+            cmake .. -DCMAKE_TOOLCHAIN_FILE=../rpi-qemu-cross.toolchain
+            make
+  
+      - name: Upload Pi400KB
+        uses: actions/upload-artifact@v2
+        with:
+          name: Pi400KB
+          path: |
+            ./build.rpi/pi400kb
+            
+          if-no-files-found: error
+          retention-days: 30
