@@ -18,6 +18,15 @@
 
 int hid_output;
 volatile int running = 0;
+volatile int grabbed = 0;
+
+int ret;
+int keyboard_fd;
+int mouse_fd;
+int uinput_keyboard_fd;
+int uinput_mouse_fd;
+struct hid_buf keyboard_buf;
+struct hid_buf mouse_buf;
 
 void signal_handler(int dummy) {
     running = 0;
@@ -71,15 +80,53 @@ void printhex(unsigned char *buf, size_t len) {
     printf("\n");
 }
 
-int main() {
-    int ret;
-    int keyboard_fd;
-    int mouse_fd;
-    int uinput_keyboard_fd;
-    int uinput_mouse_fd;
-    struct hid_buf keyboard_buf;
-    struct hid_buf mouse_buf;
+void ungrab_both() {
+    printf("Releasing Keyboard and/or Mouse\n");
 
+    if(uinput_keyboard_fd > -1) {
+        ungrab(uinput_keyboard_fd);
+    }
+
+    if(uinput_mouse_fd > -1) {
+        ungrab(uinput_mouse_fd);
+    }
+
+    grabbed = 0;
+}
+
+void grab_both() {
+    printf("Grabbing Keyboard and/or Mouse\n");
+
+    if(keyboard_fd > -1) {
+        uinput_keyboard_fd = grab(KEYBOARD_DEV);
+    }
+
+    if(mouse_fd > -1) {
+        uinput_mouse_fd = grab(MOUSE_DEV);
+    }
+
+    if (uinput_keyboard_fd > -1 || uinput_mouse_fd > -1) {
+        grabbed = 1;
+    }
+}
+
+void send_empty_hid_reports_both() {
+    if(keyboard_fd > -1) {
+#ifndef NO_OUTPUT
+        memset(keyboard_buf.data, 0, KEYBOARD_HID_REPORT_SIZE);
+        write(hid_output, (unsigned char *)&keyboard_buf, KEYBOARD_HID_REPORT_SIZE + 1);
+#endif
+    }
+
+    if(mouse_fd > -1) {
+#ifndef NO_OUTPUT
+        memset(mouse_buf.data, 0, MOUSE_HID_REPORT_SIZE);
+        write(hid_output, (unsigned char *)&mouse_buf, MOUSE_HID_REPORT_SIZE + 1);
+#endif
+    }
+}
+
+int main() {
     keyboard_buf.report_id = 1;
     mouse_buf.report_id = 2;
 
@@ -105,13 +152,7 @@ int main() {
     }
 #endif
 
-    if(keyboard_fd > -1) {
-        uinput_keyboard_fd = grab(KEYBOARD_DEV);
-    }
-
-    if(mouse_fd > -1) {
-        uinput_mouse_fd = grab(MOUSE_DEV);
-    }
+    grab_both();
 
 
 #ifndef NO_OUTPUT
@@ -138,14 +179,20 @@ int main() {
                 printhex(keyboard_buf.data, KEYBOARD_HID_REPORT_SIZE);
 
 #ifndef NO_OUTPUT
-                write(hid_output, (unsigned char *)&keyboard_buf, KEYBOARD_HID_REPORT_SIZE + 1);
-                usleep(1000);
+                if(grabbed) {
+                    write(hid_output, (unsigned char *)&keyboard_buf, KEYBOARD_HID_REPORT_SIZE + 1);
+                    usleep(1000);
+                }
 #endif
 
                 // Trap Ctrl + Raspberry and exit
                 if(keyboard_buf.data[0] == 0x09){
-                    running = 0;
-                    break;
+                    if(grabbed) {
+                        ungrab_both();
+                        send_empty_hid_reports_both();
+                    } else {
+                        grab_both();
+                    }
                 }
             }
         }
@@ -157,28 +204,17 @@ int main() {
                 printhex(mouse_buf.data, MOUSE_HID_REPORT_SIZE);
 
 #ifndef NO_OUTPUT
-                write(hid_output, (unsigned char *)&mouse_buf, MOUSE_HID_REPORT_SIZE + 1);
-                usleep(1000);
+                if(grabbed) {
+                    write(hid_output, (unsigned char *)&mouse_buf, MOUSE_HID_REPORT_SIZE + 1);
+                    usleep(1000);
+                }
 #endif
             }
         }
     }
 
-    if(keyboard_fd > -1) {
-#ifndef NO_OUTPUT
-        memset(keyboard_buf.data, 0, KEYBOARD_HID_REPORT_SIZE);
-        write(hid_output, (unsigned char *)&keyboard_buf, KEYBOARD_HID_REPORT_SIZE + 1);
-#endif
-        ungrab(uinput_keyboard_fd);
-    }
-
-    if(mouse_fd > -1) {
-#ifndef NO_OUTPUT
-        memset(mouse_buf.data, 0, MOUSE_HID_REPORT_SIZE);
-        write(hid_output, (unsigned char *)&mouse_buf, MOUSE_HID_REPORT_SIZE + 1);
-#endif
-        ungrab(uinput_mouse_fd);
-    }
+    ungrab_both();
+    send_empty_hid_reports_both();
 
 #ifndef NO_OUTPUT
     printf("Cleanup USB\n");

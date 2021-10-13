@@ -1,9 +1,11 @@
-# Raspberry Pi 400 as a USB HID Keyboard
+# Raspberry Pi 400 as a USB HID Keyboard & Mouse
 
 Hook your Pi 400 up to your PC somehow, using a USB Type-C cable into the *power* port.
 Anker make good ones- I used a 3m white one for my tests.
 
 Our USB-C to USB-A is great if you're using a USB-A port (but make sure it's a *high power* one): https://shop.pimoroni.com/products/usb-c-to-usb-a-cable-1m-black
+
+A Raspberry Pi Mouse is also supported if plugged in, eg: https://shop.pimoroni.com/products/raspberry-pi-mouse?variant=29390982119507
 
 This project started out life as a gist - https://gist.github.com/Gadgetoid/5a8ceb714de8e630059d30612503653f
 
@@ -27,7 +29,7 @@ YOUR PI 400 IS NOW A FREAKING KEYBOARD FOR YOUR PC WHAAAAT!?
 
 Your keyboard input will be detached from your Pi while it's forwarded to your host computer.
 
-Press `Ctrl + Raspberry` to exit and restore your keyboard on the Pi.
+Press `Ctrl + Raspberry` to grab/release your keyboard and mouse, switching between local use and USB.
 
 ### Mouse Support
 
