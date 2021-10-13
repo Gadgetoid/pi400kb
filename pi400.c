@@ -10,10 +10,8 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
 #include <unistd.h>
+#include <sys/sysmacros.h>
 
 
 #define KEYBOARD_DEV "/dev/input/by-id/usb-_Raspberry_Pi_Internal_Keyboard-event-kbd"

@@ -1,0 +1,3 @@
+[submodule "libusbgx"]
+	path = libusbgx
+	url = https://github.com/linux-usb-gadgets/libusbgx

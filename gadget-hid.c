@@ -4,7 +4,11 @@
 #include <linux/usb/ch9.h>
 #include <usbg/usbg.h>
 #include <usbg/function/hid.h>
-#include <usbg/function/midi.h>
+
+usbg_state *s;
+usbg_gadget *g;
+usbg_config *c;
+usbg_function *f_hid;
 
 static char report_desc[] = {
 	0x05, 0x01,
@@ -68,15 +72,6 @@ int initUSB() {
 
     struct usbg_config_strs c_strs = {
         .configuration = "1xHID"
-    };
-
-    struct usbg_f_midi_attrs midi_attrs = {
-        .index = 1,
-        .id = "usb1",
-        .buflen = 128,
-        .qlen = 16,
-        .in_ports = 1,
-        .out_ports = 1
     };
 
     struct usbg_f_hid_attrs f_attrs = {

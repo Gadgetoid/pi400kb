@@ -6,10 +6,5 @@
 #define PRODUCT         0x0007
 #define HID_REPORT_SIZE 8
 
-usbg_state *s;
-usbg_gadget *g;
-usbg_config *c;
-usbg_function *f_hid;
-
 int initUSB();
 int cleanupUSB();
