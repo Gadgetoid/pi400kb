@@ -185,7 +185,7 @@ int main() {
                 }
 #endif
 
-                // Trap Ctrl + Raspberry and exit
+                // Trap Ctrl + Raspberry and toggle capture on/off
                 if(keyboard_buf.data[0] == 0x09){
                     if(grabbed) {
                         ungrab_both();
@@ -194,13 +194,18 @@ int main() {
                         grab_both();
                     }
                 }
+                // Trap Ctrl + Shift + Raspberry and exit
+                if(keyboard_buf.data[0] == 0x0b){
+                    running = 0;
+                    break;
+                }
             }
         }
         if(mouse_fd > -1) {
             int c = read(mouse_fd, mouse_buf.data, MOUSE_HID_REPORT_SIZE);
 
             if(c == MOUSE_HID_REPORT_SIZE){
-                printf("K:");
+                printf("M:");
                 printhex(mouse_buf.data, MOUSE_HID_REPORT_SIZE);
 
 #ifndef NO_OUTPUT
