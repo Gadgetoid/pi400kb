@@ -10,6 +10,9 @@ add_compile_definitions(_GNU_SOURCE)
 
 option(NO_OUTPUT "Disable USB HID output" OFF)
 
+if(NOT HOOK_PATH)
+    set(HOOK_PATH "/home/pi/pi400kb/hook.sh" CACHE STRING "Path to .sh toggle hook")
+endif()
 
 if(NOT KEYBOARD_VID)
     set(KEYBOARD_VID "0x04d9" CACHE STRING "Vendor ID for keyboard")
@@ -68,8 +71,12 @@ target_include_directories(libusbgx INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 
 target_compile_definitions(libusbgx INTERFACE HAS_GADGET_SCHEMES)
 
-set(USBG_VERSION_HEX "0x00000000")
-configure_file(${CMAKE_CURRENT_LIST_DIR}/libusbgx/include/usbg/usbg_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/usbg_version.h @ONLY)
+if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/libusbgx/include/usbg/usbg_version.h.in)
+    set(USBG_VERSION_HEX "0x00000000")
+    configure_file(${CMAKE_CURRENT_LIST_DIR}/libusbgx/include/usbg/usbg_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/usbg_version.h @ONLY)
+else()
+    message(FATAL_ERROR "Missing usbg_version.h.in. Did you forget to `git submodule update --init`?")
+endif()
 
 find_library(libconfig libconfig)
 
@@ -83,6 +90,8 @@ add_executable(
 
 target_compile_definitions(pi400kb PRIVATE
     HAS_GADGET_SCHEMES
+
+    HOOK_PATH="${HOOK_PATH}"
 
     MOUSE_VID=${MOUSE_VID}
     MOUSE_PID=${MOUSE_PID}
