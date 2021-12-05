@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <poll.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -170,7 +171,14 @@ int main() {
     running = 1;
     signal(SIGINT, signal_handler);
 
+    struct pollfd pollFd[2];
+    pollFd[0].fd = keyboard_fd;
+    pollFd[0].events = POLLIN;
+    pollFd[1].fd = mouse_fd;
+    pollFd[1].events = POLLIN;
+
     while (running){
+        poll(pollFd, 2, -1);
         if(keyboard_fd > -1) {
             int c = read(keyboard_fd, keyboard_buf.data, KEYBOARD_HID_REPORT_SIZE);
 
