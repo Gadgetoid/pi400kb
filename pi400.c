@@ -13,6 +13,9 @@
 #include <poll.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define EVIOC_GRAB 1
 #define EVIOC_UNGRAB 0
@@ -31,6 +34,26 @@ struct hid_buf mouse_buf;
 
 void signal_handler(int dummy) {
     running = 0;
+}
+
+bool modprobe_libcomposite() {
+    pid_t pid;
+
+    pid = fork();
+
+    if (pid < 0) return false;
+    if (pid == 0) {
+        const char* argv[] = {"modprobe", "libcomposite"};
+        execv("/usr/sbin/modprobe", argv);
+        exit(0);
+    }
+    waitpid(pid, NULL, 0);
+}
+
+bool trigger_hook() {
+    char buf[4096];
+    snprintf(buf, sizeof(buf), "%s %u", HOOK_PATH, grabbed ? 1u : 0u);
+    system(buf);
 }
 
 int find_hidraw_device(char *device_type, int16_t vid, int16_t pid) {
@@ -93,6 +116,8 @@ void ungrab_both() {
     }
 
     grabbed = 0;
+
+    trigger_hook();
 }
 
 void grab_both() {
@@ -109,6 +134,8 @@ void grab_both() {
     if (uinput_keyboard_fd > -1 || uinput_mouse_fd > -1) {
         grabbed = 1;
     }
+
+    trigger_hook();
 }
 
 void send_empty_hid_reports_both() {
@@ -128,6 +155,8 @@ void send_empty_hid_reports_both() {
 }
 
 int main() {
+    modprobe_libcomposite();
+
     keyboard_buf.report_id = 1;
     mouse_buf.report_id = 2;
 
