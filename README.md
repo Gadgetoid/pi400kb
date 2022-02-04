@@ -43,6 +43,28 @@ Press `Ctrl + Shift + Raspberry` (on the grabbed keyboard) to exit.
 
 Pi 400 KB supports the official Raspberry Pi Mouse VID:PID = 093a:2510 by default, but other mice should work.
 
+### Autostart
+
+```
+sudo cp pi400kb /usr/sbin/pi400kb
+sudo systemctl edit --force --full pi400kb.service
+```
+
+Add the contents of the `pi400kb.service` file.
+
+Start the service and check its status:
+
+```
+sudo systemctl start pi400kb.service
+sudo systemctl status pi400kb.service
+```
+
+Enable start on boot if it's okay:
+
+```
+sudo systemctl enable pi400kb.service
+```
+
 ## Building & Contributing
 
 ### Building
