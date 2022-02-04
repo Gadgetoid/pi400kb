@@ -107,3 +107,16 @@ if(NO_OUTPUT)
 endif()
 
 target_link_libraries(pi400kb libusbgx)
+
+install(FILES
+    ${CMAKE_CURRENT_LIST_DIR}/hook.sh
+    ${CMAKE_CURRENT_LIST_DIR}/pi400kb.service
+    ${CMAKE_CURRENT_LIST_DIR}/README.md
+    DESTINATION .
+)
+
+install(TARGETS pi400kb DESTINATION .)
+
+set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
+set(CPACK_GENERATOR "ZIP" "TGZ")
+include(CPack)
