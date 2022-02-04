@@ -43,7 +43,7 @@ bool modprobe_libcomposite() {
 
     if (pid < 0) return false;
     if (pid == 0) {
-        const char* argv[] = {"modprobe", "libcomposite"};
+        char* const argv[] = {"modprobe", "libcomposite"};
         execv("/usr/sbin/modprobe", argv);
         exit(0);
     }
