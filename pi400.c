@@ -174,7 +174,9 @@ void send_empty_hid_reports_both() {
 }
 
 int main(int argc, char *argv[]) {
+#ifndef NO_OUTPUT
     prechecks(argv[0]);
+#endif
 
     modprobe_libcomposite();
 
