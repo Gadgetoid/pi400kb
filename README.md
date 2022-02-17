@@ -25,7 +25,7 @@ Reboot!
 
 `sudo modprobe libcomposite`
 
-`wget https://github.com/Gadgetoid/pi400kb/blob/main/pi400kb?raw=true`
+Grab the latest pi400kb for your system from releases: https://github.com/Gadgetoid/pi400kb/releases
 
 `chmod +x pi400kb`
 
