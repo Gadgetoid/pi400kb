@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -34,6 +35,24 @@ struct hid_buf mouse_buf;
 
 void signal_handler(int dummy) {
     running = 0;
+}
+
+void prechecks(char *argv0) {
+    DIR *dir;
+
+    if (geteuid() != 0) {
+        printf("Error: %s must be run as root.\n", argv0);
+        exit(1);
+    }
+
+    // is the 'dwc2' module properly loaded?
+    dir = opendir("/sys/module/dwc2");
+    if (!dir || errno == ENOENT) {
+        printf("Error: This must be added to /boot/config.txt and the system rebooted:\n");
+        printf("    dtoverlay=dwc2\n");
+        exit(1);
+    }
+    closedir(dir);
 }
 
 bool modprobe_libcomposite() {
@@ -154,7 +173,11 @@ void send_empty_hid_reports_both() {
     }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+#ifndef NO_OUTPUT
+    prechecks(argv[0]);
+#endif
+
     modprobe_libcomposite();
 
     keyboard_buf.report_id = 1;
