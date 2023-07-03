@@ -313,8 +313,14 @@ int main() {
 
 #ifndef NO_OUTPUT
     // making some assumptions here...
-    if(!open_output(keyboard_device, "/dev/hidg0") || !open_output(mouse_device, "/dev/hidg1"))
-        return 1;
+    int i = 0;
+    char str[20];
+    for(struct HIDDevice *d = devices; d; d = d->next, i++) {
+        snprintf(str, sizeof(str), "/dev/hidg%i", i);
+        if(!open_output(d, str))
+            return 1;
+    }
+
 #endif
 
     printf("Running...\n");
@@ -323,7 +329,7 @@ int main() {
 
     struct pollfd *poll_fds = malloc(sizeof(struct pollfd) * num_devices);
 
-    int i = 0;
+    i = 0;
     for(struct HIDDevice *d = devices; d; d = d->next, i++) {
         poll_fds[i].fd = d->hidraw_fd;
         poll_fds[i].events = POLLIN;
@@ -333,7 +339,7 @@ int main() {
         poll(poll_fds, num_devices, -1);
         // should check which fds are ready...
 
-        for(struct HIDDevice *d = devices; d; d = d->next, i++) {
+        for(struct HIDDevice *d = devices; d; d = d->next) {
             if(d->hidraw_fd == -1)
                 continue;
 
