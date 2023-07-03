@@ -33,6 +33,8 @@ struct HIDDevice {
 
     int output_fd;
 
+    struct hidraw_report_descriptor report_desc;
+
     struct hid_buf buf;
 };
 
@@ -110,6 +112,18 @@ bool find_hidraw_device(struct HIDDevice *device, char *device_type, int16_t vid
             printf("Found %s at: %s (%s)\n", device_type, path, name);
             device->hidraw_fd = fd;
             device->hidraw_index = x;
+
+            // grab the report descriptor
+            int desc_size;
+            ioctl(fd, HIDIOCGRDESCSIZE, &desc_size);
+            device->report_desc.size = desc_size;
+
+            ret = ioctl(fd, HIDIOCGRDESC, &device->report_desc);
+            if(ret < 0) {
+                printf("Failed to get report descriptor!\n");
+                return false;
+            }
+
             return true;
         }
 
@@ -255,14 +269,14 @@ void send_empty_hid_reports_both() {
     if(keyboard_device.output_fd > -1) {
 #ifndef NO_OUTPUT
         memset(keyboard_device.buf.data, 0, KEYBOARD_HID_REPORT_SIZE);
-        write(keyboard_device.output_fd, (unsigned char *)&keyboard_device.buf, KEYBOARD_HID_REPORT_SIZE + 1);
+        write(keyboard_device.output_fd, &keyboard_device.buf.data, KEYBOARD_HID_REPORT_SIZE);
 #endif
     }
 
     if(mouse_device.output_fd > -1) {
 #ifndef NO_OUTPUT
         memset(mouse_device.buf.data, 0, MOUSE_HID_REPORT_SIZE);
-        write(mouse_device.output_fd, (unsigned char *)&mouse_device.buf, MOUSE_HID_REPORT_SIZE + 1);
+        write(mouse_device.output_fd, &mouse_device.buf.data, MOUSE_HID_REPORT_SIZE);
 #endif
     }
 }
@@ -294,7 +308,7 @@ int main() {
     }
 
 #ifndef NO_OUTPUT
-    ret = initUSB();
+    ret = initUSB(&keyboard_device.report_desc, &mouse_device.report_desc);
     if(ret != USBG_SUCCESS && ret != USBG_ERROR_EXIST) {
         return 1;
     }
@@ -330,7 +344,7 @@ int main() {
 
 #ifndef NO_OUTPUT
                 if(grabbed) {
-                    write(keyboard_device.output_fd, (unsigned char *)&keyboard_device.buf, KEYBOARD_HID_REPORT_SIZE + 1);
+                    write(keyboard_device.output_fd, &keyboard_device.buf.data, KEYBOARD_HID_REPORT_SIZE);
                     usleep(1000);
                 }
 #endif
@@ -360,7 +374,7 @@ int main() {
 
 #ifndef NO_OUTPUT
                 if(grabbed) {
-                    write(mouse_device.output_fd, (unsigned char *)&mouse_device.buf, MOUSE_HID_REPORT_SIZE + 1);
+                    write(mouse_device.output_fd, &mouse_device.buf.data, MOUSE_HID_REPORT_SIZE);
                     usleep(1000);
                 }
 #endif

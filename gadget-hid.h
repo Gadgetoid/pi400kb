@@ -1,3 +1,4 @@
+#include <linux/hidraw.h>
 #include <linux/usb/ch9.h>
 #include <usbg/usbg.h>
 #include <usbg/function/hid.h>
@@ -17,5 +18,5 @@ struct hid_buf {
     unsigned char data[64];
 }  __attribute__ ((aligned (1)));
 
-int initUSB();
+int initUSB(struct hidraw_report_descriptor *keyboard_desc, struct hidraw_report_descriptor *mouse_desc);
 int cleanupUSB();
