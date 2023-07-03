@@ -50,7 +50,10 @@ bool modprobe_libcomposite() {
     waitpid(pid, NULL, 0);
 }
 
-bool trigger_hook() {
+void trigger_hook() {
+    if(access(HOOK_PATH, F_OK) != 0)
+        return;
+
     char buf[4096];
     snprintf(buf, sizeof(buf), "%s %u", HOOK_PATH, grabbed ? 1u : 0u);
     system(buf);
