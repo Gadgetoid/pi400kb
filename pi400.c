@@ -79,7 +79,7 @@ static void cleanup_hid_device(struct HIDDevice *dev) {
     dev->uinput_fd = -1;
 }
 
-int find_hidraw_device(char *device_type, int16_t vid, int16_t pid) {
+bool find_hidraw_device(struct HIDDevice *device, char *device_type, int16_t vid, int16_t pid) {
     int fd;
     int ret;
     struct hidraw_devinfo hidinfo;
@@ -99,13 +99,14 @@ int find_hidraw_device(char *device_type, int16_t vid, int16_t pid) {
             ioctl(fd, HIDIOCGRAWNAME(sizeof(name)), &name);
 
             printf("Found %s at: %s (%s)\n", device_type, path, name);
-            return fd;
+            device->hidraw_fd = fd;
+            return true;
         }
 
         close(fd);
     }
 
-    return -1;
+    return false;
 }
 
 int grab(char *dev) {
@@ -189,17 +190,19 @@ int main() {
     keyboard_device.buf.report_id = 1;
     mouse_device.buf.report_id = 2;
 
-    keyboard_device.hidraw_fd = find_hidraw_device("keyboard", KEYBOARD_VID, KEYBOARD_PID);
-    if(keyboard_device.hidraw_fd == -1) {
-        printf("Failed to open keyboard device\n");
-    }
-    
-    mouse_device.hidraw_fd = find_hidraw_device("mouse", MOUSE_VID, MOUSE_PID);
-    if(mouse_device.hidraw_fd == -1) {
-        printf("Failed to open mouse device\n");
-    }
+    int found_devices = 0;
 
-    if(mouse_device.hidraw_fd == -1 && keyboard_device.hidraw_fd == -1) {
+    if(find_hidraw_device(&keyboard_device, "keyboard", KEYBOARD_VID, KEYBOARD_PID))
+        found_devices++;
+    else
+        printf("Failed to open keyboard device\n");
+
+    if(find_hidraw_device(&mouse_device, "mouse", MOUSE_VID, MOUSE_PID))
+        found_devices++;
+    else
+        printf("Failed to open mouse device\n");
+
+    if(!found_devices) {
         printf("No devices to forward, bailing out!\n");
         return 1;
     }
