@@ -38,7 +38,7 @@ struct HIDDevice {
 struct HIDDevice keyboard_device;
 struct HIDDevice mouse_device;
 
-void ungrab(int fd);
+void ungrab(struct HIDDevice *device);
 
 void signal_handler(int dummy) {
     running = 0;
@@ -77,7 +77,7 @@ static void cleanup_hid_device(struct HIDDevice *dev) {
     if(dev->hidraw_fd != -1)
         close(dev->hidraw_fd);
     if(dev->uinput_fd != -1)
-        ungrab(dev->uinput_fd);
+        ungrab(dev);
 
     dev->hidraw_fd = -1;
     dev->uinput_fd = -1;
@@ -175,18 +175,34 @@ static bool find_event_path(struct HIDDevice *device, char *output, int out_len)
     return found;
 }
 
-int grab(char *dev) {
-    printf("Grabbing: %s\n", dev);
-    int fd = open(dev, O_RDONLY);
+bool grab(struct HIDDevice *device) {
+    char path[256];
+
+    if(device->hidraw_fd == -1)
+        return false;
+
+    if(!find_event_path(device, path, sizeof(path)))
+        return false;
+
+    printf("Grabbing: %s\n", path);
+    int fd = open(path, O_RDONLY);
     ioctl(fd, EVIOCGRAB, EVIOC_UNGRAB);
     usleep(500000);
     ioctl(fd, EVIOCGRAB, EVIOC_GRAB);
-    return fd;
+
+    device->uinput_fd = fd;
+
+    return true;
 }
 
-void ungrab(int fd) {
-    ioctl(fd, EVIOCGRAB, EVIOC_UNGRAB);
-    close(fd);
+void ungrab(struct HIDDevice *device) {
+    if(device->uinput_fd == -1)
+        return;
+
+    ioctl(device->uinput_fd, EVIOCGRAB, EVIOC_UNGRAB);
+    close(device->uinput_fd);
+
+    device->uinput_fd = -1;
 }
 
 void printhex(unsigned char *buf, size_t len) {
@@ -200,13 +216,8 @@ void printhex(unsigned char *buf, size_t len) {
 void ungrab_both() {
     printf("Releasing Keyboard and/or Mouse\n");
 
-    if(keyboard_device.uinput_fd > -1) {
-        ungrab(keyboard_device.uinput_fd);
-    }
-
-    if(mouse_device.uinput_fd > -1) {
-        ungrab(mouse_device.uinput_fd);
-    }
+    ungrab(&keyboard_device);
+    ungrab(&mouse_device);
 
     grabbed = 0;
 
@@ -216,19 +227,7 @@ void ungrab_both() {
 void grab_both() {
     printf("Grabbing Keyboard and/or Mouse\n");
 
-    char path[256];
-
-    if(keyboard_device.hidraw_fd > -1) {
-        if(find_event_path(&keyboard_device, path, sizeof(path)))
-            keyboard_device.uinput_fd = grab(path);
-    }
-
-    if(mouse_device.hidraw_fd > -1) {
-        if(find_event_path(&mouse_device, path, sizeof(path)))
-            mouse_device.uinput_fd = grab(path);
-    }
-
-    if (keyboard_device.uinput_fd > -1 || mouse_device.uinput_fd > -1) {
+    if (grab(&keyboard_device) | grab(&mouse_device)) {
         grabbed = 1;
     }
 
