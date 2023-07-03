@@ -75,6 +75,11 @@ static char report_desc[] = {
     0xC0,              // End Collection
 };
 
+static void print_usbg_error(const char *str, int usbg_ret) {
+    fprintf(stderr, "Error %s: %s : %s\n", str, usbg_error_name(usbg_ret),
+            usbg_strerror(usbg_ret));
+}
+
 int initUSB() {
     int usbg_ret = -EINVAL;
 
@@ -110,11 +115,8 @@ int initUSB() {
     };
 
     usbg_ret = usbg_init("/sys/kernel/config", &s);
-    if (usbg_ret != USBG_SUCCESS) {
-        fprintf(stderr, "Error on usbg init\n");
-        fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
-                usbg_strerror(usbg_ret));
-    }
+    if (usbg_ret != USBG_SUCCESS)
+        print_usbg_error("on usbg init", usbg_ret);
 
     // check for existing gadget
     usbg_gadget *ex_gadget = usbg_get_gadget(s, "g1");
@@ -127,9 +129,7 @@ int initUSB() {
 
     usbg_ret = usbg_create_gadget(s, "g1", &g_attrs, &g_strs, &g);
     if (usbg_ret != USBG_SUCCESS) {
-        fprintf(stderr, "Error creating gadget\n");
-        fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
-                usbg_strerror(usbg_ret));
+        print_usbg_error("creating gadget", usbg_ret);
         
         usbg_cleanup(s);
         s = NULL;
@@ -137,33 +137,25 @@ int initUSB() {
 
     usbg_ret = usbg_create_function(g, USBG_F_HID, "usb0", &f_attrs, &f_hid);
     if (usbg_ret != USBG_SUCCESS) {
-        fprintf(stderr, "Error creating function: USBG_F_HID\n");
-        fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
-                usbg_strerror(usbg_ret));
+        print_usbg_error("creating function: USBG_F_HID", usbg_ret);
         cleanupUSB();
     }
 
     usbg_ret = usbg_create_config(g, 1, "config", NULL, &c_strs, &c);
     if (usbg_ret != USBG_SUCCESS) {
-        fprintf(stderr, "Error creating config\n");
-        fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
-                usbg_strerror(usbg_ret));
+        print_usbg_error("creating config", usbg_ret);
         cleanupUSB();
     }
 
     usbg_ret = usbg_add_config_function(c, "keyboard", f_hid);
     if (usbg_ret != USBG_SUCCESS) {
-        fprintf(stderr, "Error adding function: keyboard\n");
-        fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
-                usbg_strerror(usbg_ret));
+        print_usbg_error("adding function: keyboard", usbg_ret);
         cleanupUSB();
     }
 
     usbg_ret = usbg_enable_gadget(g, DEFAULT_UDC);
     if (usbg_ret != USBG_SUCCESS) {
-        fprintf(stderr, "Error enabling gadget\n");
-        fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
-                usbg_strerror(usbg_ret));
+        print_usbg_error("enabling gadget", usbg_ret);
         cleanupUSB();
     }
 
