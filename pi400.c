@@ -380,11 +380,14 @@ int main() {
     ungrab_all();
     send_empty_hid_reports_all();
 
-    cleanup_hid_device(keyboard_device);
-    cleanup_hid_device(mouse_device);
+    for(struct HIDDevice *d = devices; d;) {
+        struct HIDDevice *next = d->next;
 
-    free(keyboard_device);
-    free(mouse_device);
+        cleanup_hid_device(d);
+        free(d);
+
+        d = next;
+    }
 
 #ifndef NO_OUTPUT
     printf("Cleanup USB\n");
