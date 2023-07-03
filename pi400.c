@@ -287,9 +287,6 @@ int main() {
     init_hid_device(&keyboard_device);
     init_hid_device(&mouse_device);
 
-    keyboard_device.buf.report_id = 1;
-    mouse_device.buf.report_id = 2;
-
     int found_devices = 0;
 
     if(find_hidraw_device(&keyboard_device, "keyboard", KEYBOARD_VID, KEYBOARD_PID))

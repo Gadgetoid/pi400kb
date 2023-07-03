@@ -14,7 +14,6 @@
 #define MOUSE_HID_REPORT_SIZE    4
 
 struct hid_buf {
-    uint8_t report_id;
     unsigned char data[64];
 }  __attribute__ ((aligned (1)));
 
