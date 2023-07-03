@@ -28,7 +28,10 @@ int ret;
 
 struct HIDDevice {
     int hidraw_fd;
+    int hidraw_index;
+
     int uinput_fd;
+
     struct hid_buf buf;
 };
 
@@ -66,6 +69,7 @@ void trigger_hook() {
 
 static void init_hid_device(struct HIDDevice *dev) {
     dev->hidraw_fd = -1;
+    dev->hidraw_index = -1;
     dev->uinput_fd = -1;
 }
 
@@ -100,6 +104,7 @@ bool find_hidraw_device(struct HIDDevice *device, char *device_type, int16_t vid
 
             printf("Found %s at: %s (%s)\n", device_type, path, name);
             device->hidraw_fd = fd;
+            device->hidraw_index = x;
             return true;
         }
 
@@ -107,6 +112,67 @@ bool find_hidraw_device(struct HIDDevice *device, char *device_type, int16_t vid
     }
 
     return false;
+}
+
+static bool find_event_path(struct HIDDevice *device, char *output, int out_len) {
+    bool found = false;
+
+    char path[266];
+    snprintf(path, sizeof(path), "/sys/class/hidraw/hidraw%i/device/input/", device->hidraw_index);
+
+    DIR *inputDir = opendir(path);
+
+    if(!inputDir)
+        return false;
+
+    struct dirent *inputEnt, *eventEnt;
+
+    // scan through inputN (assuming one)
+    while((inputEnt = readdir(inputDir)) != NULL && !found) {
+        if(strncmp(inputEnt->d_name, "input", 5) != 0)
+            continue;
+
+        snprintf(path, sizeof(path), "/sys/class/hidraw/hidraw%i/device/input/%s/", device->hidraw_index, inputEnt->d_name);
+
+        DIR *eventDir = opendir(path);
+
+        if(!eventDir)
+            continue;
+
+        // now scan for eventN (also assming one)
+        while((eventEnt = readdir(eventDir)) != NULL && !found) {
+            if(strncmp(eventEnt->d_name, "event", 5) != 0)
+                continue;
+
+            snprintf(path, sizeof(path), "/sys/class/hidraw/hidraw%i/device/input/%s/%s/uevent", device->hidraw_index, inputEnt->d_name, eventEnt->d_name);
+
+            // parse the uevent file
+            FILE *f = fopen(path, "r");
+
+            if(!f)
+                continue;
+
+            int line_len;
+            char *line = NULL;
+
+            while((line_len = getline(&line, &line_len, f)) != -1) {
+                // get DEVNAME
+                if(strncmp(line, "DEVNAME=", 8) == 0) {
+                    line[line_len - 1] = 0;
+                    snprintf(output, out_len, "/dev/%s", line + 8);
+                    found = true;
+                    break;
+                }
+            }
+
+            fclose(f);
+        }
+
+    }
+
+    closedir(inputDir);
+
+    return found;
 }
 
 int grab(char *dev) {
@@ -150,12 +216,16 @@ void ungrab_both() {
 void grab_both() {
     printf("Grabbing Keyboard and/or Mouse\n");
 
+    char path[256];
+
     if(keyboard_device.hidraw_fd > -1) {
-        keyboard_device.uinput_fd = grab(KEYBOARD_DEV);
+        if(find_event_path(&keyboard_device, path, sizeof(path)))
+            keyboard_device.uinput_fd = grab(path);
     }
 
     if(mouse_device.hidraw_fd > -1) {
-        mouse_device.uinput_fd = grab(MOUSE_DEV);
+        if(find_event_path(&mouse_device, path, sizeof(path)))
+            mouse_device.uinput_fd = grab(path);
     }
 
     if (keyboard_device.uinput_fd > -1 || mouse_device.uinput_fd > -1) {
