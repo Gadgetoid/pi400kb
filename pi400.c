@@ -33,13 +33,18 @@ struct HIDDevice {
 
     int output_fd;
 
+    bool is_keyboard;
+
+    int report_size;
     struct hidraw_report_descriptor report_desc;
 
     struct hid_buf buf;
+
+    struct HIDDevice *next;
 };
 
-struct HIDDevice keyboard_device;
-struct HIDDevice mouse_device;
+static struct HIDDevice *devices = NULL;
+static int num_devices = 0;
 
 void ungrab(struct HIDDevice *device);
 
@@ -75,6 +80,11 @@ static void init_hid_device(struct HIDDevice *dev) {
     dev->hidraw_index = -1;
     dev->uinput_fd = -1;
     dev->output_fd = -1;
+
+    dev->is_keyboard = false;
+    dev->report_size = 0;
+
+    dev->next = NULL;
 }
 
 static void cleanup_hid_device(struct HIDDevice *dev) {
@@ -232,22 +242,23 @@ void printhex(unsigned char *buf, size_t len) {
     printf("\n");
 }
 
-void ungrab_both() {
-    printf("Releasing Keyboard and/or Mouse\n");
+void ungrab_all() {
+    printf("Releasing Input Devices\n");
 
-    ungrab(&keyboard_device);
-    ungrab(&mouse_device);
+    for(struct HIDDevice *d = devices; d; d = d->next)
+        ungrab(d);
 
     grabbed = 0;
 
     trigger_hook();
 }
 
-void grab_both() {
-    printf("Grabbing Keyboard and/or Mouse\n");
+void grab_all() {
+    printf("Grabbing Input Devices\n");
 
-    if (grab(&keyboard_device) | grab(&mouse_device)) {
-        grabbed = 1;
+    for(struct HIDDevice *d = devices; d; d = d->next) {
+        if(grab(d))
+            grabbed = true;
     }
 
     trigger_hook();
@@ -265,36 +276,40 @@ static bool open_output(struct HIDDevice *device, const char *path) {
     return true;
 }
 
-void send_empty_hid_reports_both() {
-    if(keyboard_device.output_fd > -1) {
+void send_empty_hid_reports_all() {
 #ifndef NO_OUTPUT
-        memset(keyboard_device.buf.data, 0, KEYBOARD_HID_REPORT_SIZE);
-        write(keyboard_device.output_fd, &keyboard_device.buf.data, KEYBOARD_HID_REPORT_SIZE);
-#endif
+    for(struct HIDDevice *d = devices; d; d = d->next) {
+        if(d->output_fd) {
+            memset(d->buf.data, 0, d->report_size);
+            write(d->output_fd, d->buf.data, d->report_size);
+        }
     }
-
-    if(mouse_device.output_fd > -1) {
-#ifndef NO_OUTPUT
-        memset(mouse_device.buf.data, 0, MOUSE_HID_REPORT_SIZE);
-        write(mouse_device.output_fd, &mouse_device.buf.data, MOUSE_HID_REPORT_SIZE);
 #endif
-    }
 }
 
 int main() {
     modprobe_libcomposite();
 
-    init_hid_device(&keyboard_device);
-    init_hid_device(&mouse_device);
+    struct HIDDevice *keyboard_device = malloc(sizeof(struct HIDDevice));
+    struct HIDDevice *mouse_device = malloc(sizeof(struct HIDDevice));
+
+    init_hid_device(keyboard_device);
+    init_hid_device(mouse_device);
+
+    devices = keyboard_device;
+    keyboard_device->next = mouse_device;
+    num_devices = 2;
+
+    keyboard_device->is_keyboard = true;
 
     int found_devices = 0;
 
-    if(find_hidraw_device(&keyboard_device, "keyboard", KEYBOARD_VID, KEYBOARD_PID))
+    if(find_hidraw_device(keyboard_device, "keyboard", KEYBOARD_VID, KEYBOARD_PID))
         found_devices++;
     else
         printf("Failed to open keyboard device\n");
 
-    if(find_hidraw_device(&mouse_device, "mouse", MOUSE_VID, MOUSE_PID))
+    if(find_hidraw_device(mouse_device, "mouse", MOUSE_VID, MOUSE_PID))
         found_devices++;
     else
         printf("Failed to open mouse device\n");
@@ -305,18 +320,18 @@ int main() {
     }
 
 #ifndef NO_OUTPUT
-    ret = initUSB(&keyboard_device.report_desc, &mouse_device.report_desc);
+    ret = initUSB(&keyboard_device->report_desc, &mouse_device->report_desc);
     if(ret != USBG_SUCCESS && ret != USBG_ERROR_EXIST) {
         return 1;
     }
 #endif
 
-    grab_both();
+    grab_all();
 
 
 #ifndef NO_OUTPUT
     // making some assumptions here...
-    if(!open_output(&keyboard_device, "/dev/hidg0") || !open_output(&mouse_device, "/dev/hidg1"))
+    if(!open_output(keyboard_device, "/dev/hidg0") || !open_output(mouse_device, "/dev/hidg1"))
         return 1;
 #endif
 
@@ -324,66 +339,70 @@ int main() {
     running = 1;
     signal(SIGINT, signal_handler);
 
-    struct pollfd pollFd[2];
-    pollFd[0].fd = keyboard_device.hidraw_fd;
-    pollFd[0].events = POLLIN;
-    pollFd[1].fd = mouse_device.hidraw_fd;
-    pollFd[1].events = POLLIN;
+    struct pollfd *poll_fds = malloc(sizeof(struct pollfd) * num_devices);
+
+    int i = 0;
+    for(struct HIDDevice *d = devices; d; d = d->next, i++) {
+        poll_fds[i].fd = d->hidraw_fd;
+        poll_fds[i].events = POLLIN;
+    }
 
     while (running){
-        poll(pollFd, 2, -1);
-        if(keyboard_device.hidraw_fd > -1) {
-            int c = read(keyboard_device.hidraw_fd, keyboard_device.buf.data, KEYBOARD_HID_REPORT_SIZE);
+        poll(poll_fds, num_devices, -1);
+        // should check which fds are ready...
 
-            if(c == KEYBOARD_HID_REPORT_SIZE){
-                printf("K:");
-                printhex(keyboard_device.buf.data, KEYBOARD_HID_REPORT_SIZE);
+        for(struct HIDDevice *d = devices; d; d = d->next, i++) {
+            if(d->hidraw_fd == -1)
+                continue;
+
+            int c = read(d->hidraw_fd, d->buf.data, 64);
+
+            if(c == -1)
+                continue;
+
+            d->report_size = c;
+
+            printf("R:");
+            printhex(d->buf.data, c);
 
 #ifndef NO_OUTPUT
-                if(grabbed) {
-                    write(keyboard_device.output_fd, &keyboard_device.buf.data, KEYBOARD_HID_REPORT_SIZE);
-                    usleep(1000);
-                }
+            if(grabbed) {
+                write(d->output_fd, d->buf.data, c);
+                usleep(1000);
+            }
 #endif
 
+            if(d->is_keyboard) {
                 // Trap Ctrl + Raspberry and toggle capture on/off
-                if(keyboard_device.buf.data[0] == 0x09){
+                if(d->buf.data[0] == 0x09){
                     if(grabbed) {
-                        ungrab_both();
-                        send_empty_hid_reports_both();
+                        ungrab_all();
+                        send_empty_hid_reports_all();
                     } else {
-                        grab_both();
+                        grab_all();
                     }
                 }
+
                 // Trap Ctrl + Shift + Raspberry and exit
-                if(keyboard_device.buf.data[0] == 0x0b){
+                if(d->buf.data[0] == 0x0b){
                     running = 0;
                     break;
                 }
             }
         }
-        if(mouse_device.hidraw_fd > -1) {
-            int c = read(mouse_device.hidraw_fd, mouse_device.buf.data, MOUSE_HID_REPORT_SIZE);
 
-            if(c == MOUSE_HID_REPORT_SIZE){
-                printf("M:");
-                printhex(mouse_device.buf.data, MOUSE_HID_REPORT_SIZE);
-
-#ifndef NO_OUTPUT
-                if(grabbed) {
-                    write(mouse_device.output_fd, &mouse_device.buf.data, MOUSE_HID_REPORT_SIZE);
-                    usleep(1000);
-                }
-#endif
-            }
-        }
     }
 
-    ungrab_both();
-    send_empty_hid_reports_both();
+    free(poll_fds);
 
-    cleanup_hid_device(&keyboard_device);
-    cleanup_hid_device(&mouse_device);
+    ungrab_all();
+    send_empty_hid_reports_all();
+
+    cleanup_hid_device(keyboard_device);
+    cleanup_hid_device(mouse_device);
+
+    free(keyboard_device);
+    free(mouse_device);
 
 #ifndef NO_OUTPUT
     printf("Cleanup USB\n");
