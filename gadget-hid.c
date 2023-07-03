@@ -8,9 +8,9 @@
 usbg_state *s;
 usbg_gadget *g;
 usbg_config *c;
-usbg_function *f_hid;
+usbg_function *f_hid_keyboard, *f_hid_mouse;
 
-static char report_desc[] = {
+static char keyboard_report_desc[] = {
     0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
     0x09, 0x06,        // Usage (Keyboard)
     0xA1, 0x01,        // Collection (Application)
@@ -44,7 +44,9 @@ static char report_desc[] = {
     0x2A, 0xFF, 0x00,  //   Usage Maximum (0xFF)
     0x81, 0x00,        //   Input (Data,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
     0xC0,              // End Collection
+};
 
+static char mouse_report_desc[] = {
     0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
     0x09, 0x02,        // Usage (Mouse)
     0xA1, 0x01,        // Collection (Application)
@@ -104,11 +106,21 @@ int initUSB() {
         .configuration = "1xHID"
     };
 
-    struct usbg_f_hid_attrs f_attrs = {
+    struct usbg_f_hid_attrs f_keyboard_attrs = {
         .protocol = 1,
         .report_desc = {
-            .desc = report_desc,
-            .len = sizeof(report_desc),
+            .desc = keyboard_report_desc,
+            .len = sizeof(keyboard_report_desc),
+        },
+        .report_length = 16,
+        .subclass = 0,
+    };
+
+    struct usbg_f_hid_attrs f_mouse_attrs = {
+        .protocol = 1,
+        .report_desc = {
+            .desc = mouse_report_desc,
+            .len = sizeof(mouse_report_desc),
         },
         .report_length = 16,
         .subclass = 0,
@@ -135,7 +147,15 @@ int initUSB() {
         s = NULL;
     }
 
-    usbg_ret = usbg_create_function(g, USBG_F_HID, "usb0", &f_attrs, &f_hid);
+    // keyboard func
+    usbg_ret = usbg_create_function(g, USBG_F_HID, "hid0", &f_keyboard_attrs, &f_hid_keyboard);
+    if (usbg_ret != USBG_SUCCESS) {
+        print_usbg_error("creating function: USBG_F_HID", usbg_ret);
+        cleanupUSB();
+    }
+
+    // mouse func
+    usbg_ret = usbg_create_function(g, USBG_F_HID, "hid1", &f_mouse_attrs, &f_hid_mouse);
     if (usbg_ret != USBG_SUCCESS) {
         print_usbg_error("creating function: USBG_F_HID", usbg_ret);
         cleanupUSB();
@@ -147,9 +167,15 @@ int initUSB() {
         cleanupUSB();
     }
 
-    usbg_ret = usbg_add_config_function(c, "keyboard", f_hid);
+    usbg_ret = usbg_add_config_function(c, "keyboard", f_hid_keyboard);
     if (usbg_ret != USBG_SUCCESS) {
         print_usbg_error("adding function: keyboard", usbg_ret);
+        cleanupUSB();
+    }
+
+    usbg_ret = usbg_add_config_function(c, "mouse", f_hid_mouse);
+    if (usbg_ret != USBG_SUCCESS) {
+        print_usbg_error("adding function: mouse", usbg_ret);
         cleanupUSB();
     }
 

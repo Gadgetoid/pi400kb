@@ -20,7 +20,6 @@
 #define EVIOC_GRAB 1
 #define EVIOC_UNGRAB 0
 
-int hid_output;
 volatile int running = 0;
 volatile int grabbed = 0;
 
@@ -31,6 +30,8 @@ struct HIDDevice {
     int hidraw_index;
 
     int uinput_fd;
+
+    int output_fd;
 
     struct hid_buf buf;
 };
@@ -71,6 +72,7 @@ static void init_hid_device(struct HIDDevice *dev) {
     dev->hidraw_fd = -1;
     dev->hidraw_index = -1;
     dev->uinput_fd = -1;
+    dev->output_fd = -1;
 }
 
 static void cleanup_hid_device(struct HIDDevice *dev) {
@@ -78,9 +80,12 @@ static void cleanup_hid_device(struct HIDDevice *dev) {
         close(dev->hidraw_fd);
     if(dev->uinput_fd != -1)
         ungrab(dev);
+    if(dev->output_fd != -1)
+        close(dev->output_fd);
 
     dev->hidraw_fd = -1;
     dev->uinput_fd = -1;
+    dev->output_fd = -1;
 }
 
 bool find_hidraw_device(struct HIDDevice *device, char *device_type, int16_t vid, int16_t pid) {
@@ -234,18 +239,30 @@ void grab_both() {
     trigger_hook();
 }
 
+static bool open_output(struct HIDDevice *device, const char *path) {
+    do {
+        device->output_fd = open(path, O_WRONLY | O_NDELAY);
+    } while (device->output_fd == -1 && errno == EINTR);
+
+    if (device->output_fd == -1){
+        printf("Error opening %s for writing.\n", path);
+        return false;
+    }
+    return true;
+}
+
 void send_empty_hid_reports_both() {
-    if(keyboard_device.hidraw_fd > -1) {
+    if(keyboard_device.output_fd > -1) {
 #ifndef NO_OUTPUT
         memset(keyboard_device.buf.data, 0, KEYBOARD_HID_REPORT_SIZE);
-        write(hid_output, (unsigned char *)&keyboard_device.buf, KEYBOARD_HID_REPORT_SIZE + 1);
+        write(keyboard_device.output_fd, (unsigned char *)&keyboard_device.buf, KEYBOARD_HID_REPORT_SIZE + 1);
 #endif
     }
 
-    if(mouse_device.hidraw_fd > -1) {
+    if(mouse_device.output_fd > -1) {
 #ifndef NO_OUTPUT
         memset(mouse_device.buf.data, 0, MOUSE_HID_REPORT_SIZE);
-        write(hid_output, (unsigned char *)&mouse_device.buf, MOUSE_HID_REPORT_SIZE + 1);
+        write(mouse_device.output_fd, (unsigned char *)&mouse_device.buf, MOUSE_HID_REPORT_SIZE + 1);
 #endif
     }
 }
@@ -287,14 +304,9 @@ int main() {
 
 
 #ifndef NO_OUTPUT
-    do {
-        hid_output = open("/dev/hidg0", O_WRONLY | O_NDELAY);
-    } while (hid_output == -1 && errno == EINTR);
-
-    if (hid_output == -1){
-        printf("Error opening /dev/hidg0 for writing.\n");
+    // making some assumptions here...
+    if(!open_output(&keyboard_device, "/dev/hidg0") || !open_output(&mouse_device, "/dev/hidg1"))
         return 1;
-    }
 #endif
 
     printf("Running...\n");
@@ -318,7 +330,7 @@ int main() {
 
 #ifndef NO_OUTPUT
                 if(grabbed) {
-                    write(hid_output, (unsigned char *)&keyboard_device.buf, KEYBOARD_HID_REPORT_SIZE + 1);
+                    write(keyboard_device.output_fd, (unsigned char *)&keyboard_device.buf, KEYBOARD_HID_REPORT_SIZE + 1);
                     usleep(1000);
                 }
 #endif
@@ -348,7 +360,7 @@ int main() {
 
 #ifndef NO_OUTPUT
                 if(grabbed) {
-                    write(hid_output, (unsigned char *)&mouse_device.buf, MOUSE_HID_REPORT_SIZE + 1);
+                    write(mouse_device.output_fd, (unsigned char *)&mouse_device.buf, MOUSE_HID_REPORT_SIZE + 1);
                     usleep(1000);
                 }
 #endif
