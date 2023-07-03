@@ -35,6 +35,8 @@ struct HIDDevice {
 struct HIDDevice keyboard_device;
 struct HIDDevice mouse_device;
 
+void ungrab(int fd);
+
 void signal_handler(int dummy) {
     running = 0;
 }
@@ -63,6 +65,16 @@ void trigger_hook() {
 }
 
 static void init_hid_device(struct HIDDevice *dev) {
+    dev->hidraw_fd = -1;
+    dev->uinput_fd = -1;
+}
+
+static void cleanup_hid_device(struct HIDDevice *dev) {
+    if(dev->hidraw_fd != -1)
+        close(dev->hidraw_fd);
+    if(dev->uinput_fd != -1)
+        ungrab(dev->uinput_fd);
+
     dev->hidraw_fd = -1;
     dev->uinput_fd = -1;
 }
@@ -274,6 +286,9 @@ int main() {
 
     ungrab_both();
     send_empty_hid_reports_both();
+
+    cleanup_hid_device(&keyboard_device);
+    cleanup_hid_device(&mouse_device);
 
 #ifndef NO_OUTPUT
     printf("Cleanup USB\n");
