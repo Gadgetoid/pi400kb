@@ -71,8 +71,11 @@ int find_hidraw_device(char *device_type, int16_t vid, int16_t pid) {
 
         ret = ioctl(fd, HIDIOCGRAWINFO, &hidinfo);
 
-        if(hidinfo.vendor == vid && hidinfo.product == pid) {
-            printf("Found %s at: %s\n", device_type, path);
+        if(ret == 0 && hidinfo.vendor == vid && hidinfo.product == pid) {
+            char name[256] = {0};
+            ioctl(fd, HIDIOCGRAWNAME(sizeof(name)), &name);
+
+            printf("Found %s at: %s (%s)\n", device_type, path, name);
             return fd;
         }
 
