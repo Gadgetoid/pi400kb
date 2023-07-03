@@ -82,7 +82,7 @@ static void cleanup_hid_device(struct HIDDevice *dev) {
     dev->output_fd = -1;
 }
 
-bool find_hidraw_device(struct HIDDevice *device, char *device_type, int16_t vid, int16_t pid) {
+static void find_hidraw_devices() {
     int fd;
     int ret;
     struct hidraw_devinfo hidinfo;
@@ -97,11 +97,15 @@ bool find_hidraw_device(struct HIDDevice *device, char *device_type, int16_t vid
 
         ret = ioctl(fd, HIDIOCGRAWINFO, &hidinfo);
 
-        if(ret == 0 && hidinfo.vendor == vid && hidinfo.product == pid) {
+        if(ret == 0 ) {
             char name[256] = {0};
             ioctl(fd, HIDIOCGRAWNAME(sizeof(name)), &name);
 
-            printf("Found %s at: %s (%s)\n", device_type, path, name);
+            printf("Found %04X:%04X at: %s (%s)\n", hidinfo.vendor, hidinfo.product, path, name);
+
+            struct HIDDevice *device = malloc(sizeof(struct HIDDevice));
+            init_hid_device(device);
+
             device->hidraw_fd = fd;
             device->hidraw_index = x;
 
@@ -113,16 +117,25 @@ bool find_hidraw_device(struct HIDDevice *device, char *device_type, int16_t vid
             ret = ioctl(fd, HIDIOCGRDESC, &device->report_desc);
             if(ret < 0) {
                 printf("Failed to get report descriptor!\n");
-                return false;
+                free(device);
+                continue;
             }
 
-            return true;
+            device->is_keyboard = hidinfo.vendor == KEYBOARD_VID && hidinfo.product == KEYBOARD_PID;
+
+            // add to end of list
+            struct HIDDevice *tail = devices;
+            while(tail && tail->next)
+                tail = tail->next;
+
+            if(tail)
+                tail->next = device;
+            else
+                devices = device;
+
+            num_devices++;
         }
-
-        close(fd);
     }
-
-    return false;
 }
 
 static bool find_event_path(struct HIDDevice *device, char *output, int out_len) {
@@ -272,34 +285,14 @@ void send_empty_hid_reports_all() {
 int main() {
     modprobe_libcomposite();
 
-    struct HIDDevice *keyboard_device = malloc(sizeof(struct HIDDevice));
-    struct HIDDevice *mouse_device = malloc(sizeof(struct HIDDevice));
+    find_hidraw_devices();
 
-    init_hid_device(keyboard_device);
-    init_hid_device(mouse_device);
-
-    devices = keyboard_device;
-    keyboard_device->next = mouse_device;
-    num_devices = 2;
-
-    keyboard_device->is_keyboard = true;
-
-    int found_devices = 0;
-
-    if(find_hidraw_device(keyboard_device, "keyboard", KEYBOARD_VID, KEYBOARD_PID))
-        found_devices++;
-    else
-        printf("Failed to open keyboard device\n");
-
-    if(find_hidraw_device(mouse_device, "mouse", MOUSE_VID, MOUSE_PID))
-        found_devices++;
-    else
-        printf("Failed to open mouse device\n");
-
-    if(!found_devices) {
+    if(!num_devices) {
         printf("No devices to forward, bailing out!\n");
         return 1;
     }
+
+    printf("Found %i devices\n", num_devices);
 
 #ifndef NO_OUTPUT
     ret = initUSB(devices);
