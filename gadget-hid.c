@@ -114,7 +114,6 @@ int initUSB() {
         fprintf(stderr, "Error on usbg init\n");
         fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
                 usbg_strerror(usbg_ret));
-        goto out1;
     }
 
     // check for existing gadget
@@ -131,7 +130,9 @@ int initUSB() {
         fprintf(stderr, "Error creating gadget\n");
         fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
                 usbg_strerror(usbg_ret));
-        goto out2;
+        
+        usbg_cleanup(s);
+        s = NULL;
     }
 
     usbg_ret = usbg_create_function(g, USBG_F_HID, "usb0", &f_attrs, &f_hid);
@@ -139,7 +140,7 @@ int initUSB() {
         fprintf(stderr, "Error creating function: USBG_F_HID\n");
         fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
                 usbg_strerror(usbg_ret));
-        goto out2;
+        cleanupUSB();
     }
 
     usbg_ret = usbg_create_config(g, 1, "config", NULL, &c_strs, &c);
@@ -147,7 +148,7 @@ int initUSB() {
         fprintf(stderr, "Error creating config\n");
         fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
                 usbg_strerror(usbg_ret));
-        goto out2;
+        cleanupUSB();
     }
 
     usbg_ret = usbg_add_config_function(c, "keyboard", f_hid);
@@ -155,7 +156,7 @@ int initUSB() {
         fprintf(stderr, "Error adding function: keyboard\n");
         fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
                 usbg_strerror(usbg_ret));
-        goto out2;
+        cleanupUSB();
     }
 
     usbg_ret = usbg_enable_gadget(g, DEFAULT_UDC);
@@ -163,14 +164,9 @@ int initUSB() {
         fprintf(stderr, "Error enabling gadget\n");
         fprintf(stderr, "Error: %s : %s\n", usbg_error_name(usbg_ret),
                 usbg_strerror(usbg_ret));
-        goto out2;
+        cleanupUSB();
     }
 
-out2:
-    usbg_cleanup(s);
-    s = NULL;
-
-out1:
     return usbg_ret;
 }
 
@@ -178,9 +174,11 @@ int cleanupUSB(){
     if(g){
         usbg_disable_gadget(g);
         usbg_rm_gadget(g, USBG_RM_RECURSE);
+        g = NULL;
     }
     if(s){
         usbg_cleanup(s);
+        s = NULL;
     }
     return 0;
 }
