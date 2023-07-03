@@ -117,6 +117,15 @@ int initUSB() {
         goto out1;
     }
 
+    // check for existing gadget
+    usbg_gadget *ex_gadget = usbg_get_gadget(s, "g1");
+
+    if(ex_gadget) {
+        // remove it (assume failed shutdown)
+        usbg_disable_gadget(ex_gadget);
+        usbg_rm_gadget(ex_gadget, USBG_RM_RECURSE);
+    }
+
     usbg_ret = usbg_create_gadget(s, "g1", &g_attrs, &g_strs, &g);
     if (usbg_ret != USBG_SUCCESS) {
         fprintf(stderr, "Error creating gadget\n");
