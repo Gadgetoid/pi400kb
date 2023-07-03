@@ -25,24 +25,6 @@ volatile int grabbed = 0;
 
 int ret;
 
-struct HIDDevice {
-    int hidraw_fd;
-    int hidraw_index;
-
-    int uinput_fd;
-
-    int output_fd;
-
-    bool is_keyboard;
-
-    int report_size;
-    struct hidraw_report_descriptor report_desc;
-
-    struct hid_buf buf;
-
-    struct HIDDevice *next;
-};
-
 static struct HIDDevice *devices = NULL;
 static int num_devices = 0;
 
@@ -320,7 +302,7 @@ int main() {
     }
 
 #ifndef NO_OUTPUT
-    ret = initUSB(&keyboard_device->report_desc, &mouse_device->report_desc);
+    ret = initUSB(devices);
     if(ret != USBG_SUCCESS && ret != USBG_ERROR_EXIST) {
         return 1;
     }

@@ -17,5 +17,24 @@ struct hid_buf {
     unsigned char data[64];
 }  __attribute__ ((aligned (1)));
 
-int initUSB(struct hidraw_report_descriptor *keyboard_desc, struct hidraw_report_descriptor *mouse_desc);
+
+struct HIDDevice {
+    int hidraw_fd;
+    int hidraw_index;
+
+    int uinput_fd;
+
+    int output_fd;
+
+    bool is_keyboard;
+
+    int report_size;
+    struct hidraw_report_descriptor report_desc;
+
+    struct hid_buf buf;
+
+    struct HIDDevice *next;
+};
+
+int initUSB(struct HIDDevice *devices);
 int cleanupUSB();
