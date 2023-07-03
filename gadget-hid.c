@@ -40,7 +40,10 @@ int initUSB(struct HIDDevice *devices) {
 
     usbg_ret = usbg_init("/sys/kernel/config", &s);
     if (usbg_ret != USBG_SUCCESS)
+    {
         print_usbg_error("on usbg init", usbg_ret);
+        return usbg_ret;
+    }
 
     // check for existing gadget
     usbg_gadget *ex_gadget = usbg_get_gadget(s, "g1");
@@ -57,12 +60,14 @@ int initUSB(struct HIDDevice *devices) {
         
         usbg_cleanup(s);
         s = NULL;
+        return usbg_ret;
     }
 
     usbg_ret = usbg_create_config(g, 1, "config", NULL, &c_strs, &c);
     if (usbg_ret != USBG_SUCCESS) {
         print_usbg_error("creating config", usbg_ret);
         cleanupUSB();
+        return usbg_ret;
     }
 
     int i = 0;
@@ -87,6 +92,7 @@ int initUSB(struct HIDDevice *devices) {
         if (usbg_ret != USBG_SUCCESS) {
             print_usbg_error("creating function: USBG_F_HID", usbg_ret);
             cleanupUSB();
+            return usbg_ret;
         }
 
         // add func
@@ -94,6 +100,7 @@ int initUSB(struct HIDDevice *devices) {
         if (usbg_ret != USBG_SUCCESS) {
             print_usbg_error("adding function", usbg_ret);
             cleanupUSB();
+            return usbg_ret;
         }
     }
 
@@ -101,6 +108,7 @@ int initUSB(struct HIDDevice *devices) {
     if (usbg_ret != USBG_SUCCESS) {
         print_usbg_error("enabling gadget", usbg_ret);
         cleanupUSB();
+        return usbg_ret;
     }
 
     return usbg_ret;
