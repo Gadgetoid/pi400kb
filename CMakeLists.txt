@@ -23,15 +23,6 @@ if(NOT KEYBOARD_PID)
 endif()
 
 
-if(NOT MOUSE_VID)
-    set(MOUSE_VID "0x093a" CACHE STRING "Vendor ID for mouse")
-endif()
-
-if(NOT MOUSE_PID)
-    set(MOUSE_PID "0x2510" CACHE STRING "Product ID for mouse")
-endif()
-
-
 add_library(libusbgx INTERFACE)
 target_sources(libusbgx INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/libusbgx/src/usbg.c
@@ -85,13 +76,8 @@ target_compile_definitions(pi400kb PRIVATE
 
     HOOK_PATH="${HOOK_PATH}"
 
-    MOUSE_VID=${MOUSE_VID}
-    MOUSE_PID=${MOUSE_PID}
-    MOUSE_DEV="${MOUSE_DEV}"
-
     KEYBOARD_VID=${KEYBOARD_VID}
     KEYBOARD_PID=${KEYBOARD_PID}
-    KEYBOARD_DEV="${KEYBOARD_DEV}"
 )
 
 if(NO_OUTPUT)
