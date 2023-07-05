@@ -86,10 +86,6 @@ CMake accepts the following build arguments to customise the VID/PID and device 
 
 * `KEYBOARD_VID` - Keyboard Vendor ID, default: 0x04d9
 * `KEYBOARD_PID` - Keyboard Product ID, default: 0x0007
-* `KEYBOARD_DEV` - Keyboard device path, default: /dev/input/by-id/usb-_Raspberry_Pi_Internal_Keyboard-event-kbd
-* `MOUSE_VID` - Mouse Vendor ID, default: 0x093a
-* `MOUSE_PID` - Mouse Product ID, default: 0x2510
-* `MOUSE_DEV` - Mouse device path, default: /dev/input/by-id/usb-PixArt_USB_Optical_Mouse-event-mouse
 
 Supply these arguments when configuring with CMake, eg:
 
