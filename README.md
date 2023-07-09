@@ -1,7 +1,9 @@
 # Raspberry Pi 400 as a USB HID Keyboard & Mouse <!-- omit in toc -->
 
-Hook your Pi 400 up to your PC somehow, using a USB Type-C cable into the *power* port.
-Anker make good ones- I used a 3m white one for my tests.
+Hook your Pi 400 up to your PC somehow, using a USB Type-C cable into the *power* port of the pi. 
+Anker make good ones- I used a 3m white one for my tests. 
+
+You <b> cannot </b> use the usb-a ports of the pi, it must be the usb-c power port!
 
 Our USB-C to USB-A is great if you're using a USB-A port (but make sure it's a *high power* one): https://shop.pimoroni.com/products/usb-c-to-usb-a-cable-1m-black
 
@@ -10,6 +12,8 @@ A Raspberry Pi Mouse is also supported if plugged in, eg: https://shop.pimoroni.
 # Caveats
  
 Sometimes the computer cannot power the pi enough, especially if you're overclocking. In this situation it is recommended to try a splitter such as: <a href='https://elmorlabs.com/product/usb-c-power-data-switch-for-raspberry-pi-4/'>this one.</a>
+
+Whether or not it will work while plugged into your pc depends on the system and the specific port used. 
 
 # info
 
