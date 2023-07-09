@@ -7,6 +7,12 @@ Our USB-C to USB-A is great if you're using a USB-A port (but make sure it's a *
 
 A Raspberry Pi Mouse is also supported if plugged in, eg: https://shop.pimoroni.com/products/raspberry-pi-mouse?variant=29390982119507
 
+# Caveats
+ 
+Sometimes the computer cannot power the pi enough, especially if you're overclocking. In this situation it is recommended to try a splitter such as: <a href='https://elmorlabs.com/product/usb-c-power-data-switch-for-raspberry-pi-4/'>this one.</a>
+
+# info
+
 This project started out life as a gist - https://gist.github.com/Gadgetoid/5a8ceb714de8e630059d30612503653f
 
 Thank you to all the people who dropped by with kind words, suggestions and improvements.
@@ -46,7 +52,7 @@ Pi 400 KB supports the official Raspberry Pi Mouse VID:PID = 093a:2510 by defaul
 ### Autostart
 
 ```
-sudo cp pi400kb /usr/sbin/pi400kb
+sudo cp pi400kb /usr/bin/pi400kb
 sudo systemctl edit --force --full pi400kb.service
 ```
 
