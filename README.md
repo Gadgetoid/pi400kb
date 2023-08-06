@@ -64,6 +64,22 @@ Enable start on boot if it's okay:
 ```
 sudo systemctl enable pi400kb.service
 ```
+After that, run:
+
+```sudo systemctl edit --force --full modprobe.service```
+
+This will create the service to run ```modprobe libcomposite``` on startup.
+From there, copy and paste the contents of the ```modprobe.service``` into the file.
+
+Run ```sudo systemctl start modprobe.service``` and ```sudo systemctl status modprobe.service```.
+
+If everything is working fine, make it enable at start up with:
+
+```sudo systemctl enable modprobe.service```
+
+And voila! Your Pi400 should now function as a keyboard.
+
+```
 
 ## Building & Contributing
 

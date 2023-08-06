@@ -1,0 +1,12 @@
+[Unit]
+Description=Modprobe on start up
+
+[Service]
+ExecStart=/usr/sbin/modprobe libcomposite
+User=root   
+Group=root   
+Type=simple
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
