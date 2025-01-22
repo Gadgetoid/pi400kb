@@ -67,6 +67,12 @@ Enable start on boot if it's okay:
 sudo systemctl enable pi400kb.service
 ```
 
+Finally copy pi400kb.conf into /etc/modules-load.d/:
+
+```
+sudo cp pi400kb.conf /etc/modules-load.d/
+```
+
 ## Building & Contributing
 
 ### Building
