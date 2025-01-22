@@ -46,7 +46,7 @@ Pi 400 KB supports the official Raspberry Pi Mouse VID:PID = 093a:2510 by defaul
 ### Autostart
 
 ```
-sudo cp pi400kb /usr/sbin/pi400kb
+sudo cp pi400kb /usr/bin/pi400kb
 sudo systemctl edit --force --full pi400kb.service
 ```
 

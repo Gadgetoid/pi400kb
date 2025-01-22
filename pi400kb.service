@@ -2,7 +2,7 @@
 Description=pi400kb USB OTG Keyboard & Mouse forwarding
 
 [Service]
-ExecStart=/usr/sbin/pi400kb
+ExecStart=/usr/bin/pi400kb
 User=root   
 Group=root   
 Type=simple
