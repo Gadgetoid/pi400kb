@@ -80,6 +80,16 @@ cmake ..
 make
 ```
 
+### Building for Pi 500
+
+Replace the `cmake ..` command above with:
+
+```
+cmake .. -DKEYBOARD_VID=0x2e8a -DKEYBOARD_PID=0x0010 -DKEYBOARD_DEV=/dev/input/by-id/usb-Raspberry_Pi_Ltd_Pi_500_Keyboard-event-kbd
+```
+
+(thanks to 57r31 for the above command)
+
 ### Custom Mouse/Keyboard Devices
 
 CMake accepts the following build arguments to customise the VID/PID and device path for the mouse/keyboard:
