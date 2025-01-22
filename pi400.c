@@ -156,18 +156,24 @@ void send_empty_hid_reports_both() {
 
 int main(int argc, char* argv[]) {
     int opt = 0;
+    bool load_libcomposite = true;
     bool grab_on_launch = true;
+    bool grab_mouse = true;
 
-    while ((opt = getopt(argc, argv, "n")) != -1) {
+    while ((opt = getopt(argc, argv, "lmn")) != -1) {
         switch (opt) {
-        case 'n': grab_on_launch = false; break;
-        default:
-            fprintf(stderr, "Usage: %s [-n]]\n", argv[0]);
-            exit(1);
+            case 'n': grab_on_launch = false; break;
+            case 'l': load_libcomposite = false; break;
+            case 'm': grab_mouse = false; break;
+            default:
+                      fprintf(stderr, "Usage: %s [-lmn]]\n", argv[0]); 
+                      exit(1);
         }
     }
 
-    modprobe_libcomposite();
+    if (load_libcomposite) {
+        modprobe_libcomposite();
+    }
 
     keyboard_buf.report_id = 1;
     mouse_buf.report_id = 2;
@@ -176,10 +182,14 @@ int main(int argc, char* argv[]) {
     if(keyboard_fd == -1) {
         printf("Failed to open keyboard device\n");
     }
-    
-    mouse_fd = find_hidraw_device("mouse", MOUSE_VID, MOUSE_PID);
-    if(mouse_fd == -1) {
-        printf("Failed to open mouse device\n");
+
+    if (grab_mouse) {
+        mouse_fd = find_hidraw_device("mouse", MOUSE_VID, MOUSE_PID);
+        if(mouse_fd == -1) {
+            printf("Failed to open mouse device\n");
+        }
+    } else {
+        mouse_fd = -1;
     }
 
     if(mouse_fd == -1 && keyboard_fd == -1) {
