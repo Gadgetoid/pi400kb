@@ -154,7 +154,19 @@ void send_empty_hid_reports_both() {
     }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    int opt = 0;
+    bool grab_on_launch = true;
+
+    while ((opt = getopt(argc, argv, "n")) != -1) {
+        switch (opt) {
+        case 'n': grab_on_launch = false; break;
+        default:
+            fprintf(stderr, "Usage: %s [-n]]\n", argv[0]);
+            exit(1);
+        }
+    }
+
     modprobe_libcomposite();
 
     keyboard_buf.report_id = 1;
@@ -182,7 +194,9 @@ int main() {
     }
 #endif
 
-    grab_both();
+    if(grab_on_launch) {
+        grab_both();
+    }
 
 
 #ifndef NO_OUTPUT
