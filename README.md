@@ -1,15 +1,17 @@
-# Raspberry Pi 400 as a USB HID Keyboard & Mouse <!-- omit in toc -->
+# Raspberry Pi 400 and Pi 500as a USB HID Keyboard & Mouse <!-- omit in toc -->
 
-Hook your Pi 400 up to your PC somehow, using a USB Type-C cable into the *power* port.
+Hook your Pi 400 up to your PC somehow, using a USB Type-C cable into the *power* port of the Pi.
 Anker make good ones- I used a 3m white one for my tests.
 
 Our USB-C to USB-A is great if you're using a USB-A port (but make sure it's a *high power* one): https://shop.pimoroni.com/products/usb-c-to-usb-a-cable-1m-black
 
 A Raspberry Pi Mouse is also supported if plugged in, eg: https://shop.pimoroni.com/products/raspberry-pi-mouse?variant=29390982119507
 
-This project started out life as a gist - https://gist.github.com/Gadgetoid/5a8ceb714de8e630059d30612503653f
+:warning: The Pi 400 and Pi 500 are power hungry, in some cases your computer may not supply enough current, or trigger a low voltage warning.
 
-Thank you to all the people who dropped by with kind words, suggestions and improvements.
+You may need to *inject* additional power from an official supply, using something like this: https://thepihut.com/products/usb-c-data-power-splitter
+
+## Contents <!-- omit in toc -->
 
 - [Quickstart (Ish)](#quickstart-ish)
   - [Mouse Support](#mouse-support)
@@ -106,3 +108,11 @@ Supply these arguments when configuring with CMake, eg:
 ```
 cmake .. -DMOUSE_DEV="/dev/input/by-id/usb-EndGameGear_XM1_Gaming_Mouse_0000000000000000-event-mouse" -DMOUSE_VID=0x3367 -DMOUSE_PID=0x1903
 ```
+
+## Info
+
+This project started out life as a gist - https://gist.github.com/Gadgetoid/5a8ceb714de8e630059d30612503653f
+
+Thank you to all the people who dropped by with kind words, suggestions and improvements.
+
+
